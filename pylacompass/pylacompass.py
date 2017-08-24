@@ -1,4 +1,4 @@
-import h5py, warnings, os, glob, sys
+import h5py, warnings, os, glob, sys, re
 import numpy as np
 from   struct import calcsize, unpack
 
@@ -23,6 +23,13 @@ class data_dict(dict):
     def __init__(self, *args, **kwargs):
         super(data_dict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
+    def get_dict(self):
+        """
+        Returns a copy of the dictionary containing the data.
+        """
+        import copy
+        return copy.copy(self.__dict__)
 
 def read_input(fname,assignment='=',comment='#',headings='<.*?>',separators=[','],skiprows=0):
     """
@@ -117,6 +124,38 @@ def read_input(fname,assignment='=',comment='#',headings='<.*?>',separators=[','
 
 
 def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
+    """
+    Function to read data of the multi-species dust+gas hydro code.
+
+    Arguments:
+    ----------
+
+    directory : string
+        path to read from. Should be the simulation folder containing input and
+        output files as well as the binary data folder `bin_data/`.
+
+    n : integer
+        index of the binary snapshot to read
+
+    igrid : integer
+        grid parameter; only igrid=0 is currently implemented
+
+    fname : None | str
+        None (default): makes nothing;
+        str: specify hdf5 file name to write into
+
+    log_grid : int
+        0 : not a log grid
+        1 : log grid
+
+    Output:
+    -------
+
+    d : data_dict
+        `data_dict` object containing the relevant data fields
+
+    if `fname` is given, also a hdf5 file is written out.
+    """
     #
     # construct the binary filename & file path
     #
@@ -128,7 +167,7 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
         filename      = os.path.split(filename_full)[-1]
     else:
         filename = 'bin_out{:04d}'.format(n)
-        filename_full = os.path.join(os.path.expanduser(directory),filename)
+        filename_full = os.path.join(os.path.expanduser(directory),'bin_data',filename)
     #
     # read initial entries that define what is to be read in next
     #
@@ -182,8 +221,8 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
         # reading in the data
         #
         for i in range(0, nproc):
-            sys.stdout.write('\rreading part {} of {}\n'.format(i+1,nproc))
-            sys.stdout.flus()
+            sys.stdout.write('\rreading part {} of {}'.format(i+1,nproc))
+            sys.stdout.flush()
             n4   = fread(f, 4*"i")
             ix   = n4[0]   # starting x-pos
             iy   = n4[1]   # starting y-pos
@@ -193,7 +232,7 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
             dat1 = np.array(dat1).reshape((nx1,ny1,nvar), order="F")
             data[ix:ix+nx1,iy:iy+ny1,:] = dat1.copy();
             del dat1
-        print('Done reading data')
+        print('\rFinished reading data.')
     #
     # read in parameters
     #
@@ -203,6 +242,7 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
     # assign the variables to fields
     #
     d  = {  'n':       n,
+            'na':      na,
             'x':       x,
             'xx':      xx,
             'dx':      dx,
@@ -264,3 +304,7 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
             for k,v in d.items():
                 if k in g: del g[k]
                 g.create_dataset(k,data=v)
+    #
+    # end of read_data: return data dictionary
+    #
+    return data_dict(d)
