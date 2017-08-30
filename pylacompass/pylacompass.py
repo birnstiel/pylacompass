@@ -1,6 +1,14 @@
-import h5py, warnings, os, glob, sys, re
+"""Module to read and process LA-COMPASS simulation data"""
+import h5py
+import warnings
+import os
+import glob
+import sys
+import re
+import json
 import numpy as np
-from   struct import calcsize, unpack
+from struct import calcsize, unpack
+
 
 def fread(f, fmt):
     """
@@ -9,9 +17,10 @@ def fread(f, fmt):
     is defined as the string `fmt`, such as 'fff'.
     """
     u = unpack(fmt, f.read(calcsize(fmt)))
-    if (len(fmt)==1):
+    if (len(fmt) == 1):
         u = u[0]
     return u
+
 
 class data_dict(dict):
     """
@@ -19,8 +28,11 @@ class data_dict(dict):
     as attributes. Inherits from dict class, similar to the following:
 
     """
+
     __doc__ += dict.__doc__
+
     def __init__(self, *args, **kwargs):
+        """Initializes a data_dict from a dictionary"""
         super(data_dict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
@@ -31,7 +43,8 @@ class data_dict(dict):
         import copy
         return copy.copy(self.__dict__)
 
-def read_input(fname,assignment='=',comment='#',headings='<.*?>',separators=[','],skiprows=0):
+
+def read_input(fname, assignment='=', comment='#', headings='<.*?>', separators=[','], skiprows=0):
     """
     Reads input parameters from a text file.
 
@@ -90,14 +103,19 @@ def read_input(fname,assignment='=',comment='#',headings='<.*?>',separators=[','
 
     """
     variables = {}
-    with open(fname) as f: data = f.readlines()
+    with open(fname) as f:
+        data = f.readlines()
     # remove comments
-    fct  = lambda line: line.strip().split(comment)[0]
-    data = [fct(line) for line in data if fct(line)!='']
+
+    def fct(line):
+        return line.strip().split(comment)[0]
+    data = [fct(line) for line in data if fct(line) != '']
     data = data[skiprows:]
     # remove headings
-    fct = lambda line: re.subn(headings,'',line)[0].strip()
-    data = [fct(line) for line in data if fct(line)!='']
+
+    def fct(line):
+        return re.subn(headings, '', line)[0].strip()
+    data = [fct(line) for line in data if fct(line) != '']
     # split everything
     for separator in separators:
         data_split = []
@@ -106,9 +124,9 @@ def read_input(fname,assignment='=',comment='#',headings='<.*?>',separators=[','
         data = data_split
     # parse variables
     for line in data:
-        varname,varval = line.split(assignment)
+        varname, varval = line.split(assignment)
         varname = varname.strip()
-        varval  = varval.strip()
+        varval = varval.strip()
         #
         # select format
         #
@@ -119,16 +137,15 @@ def read_input(fname,assignment='=',comment='#',headings='<.*?>',separators=[','
                 varval = float(varval)
             except ValueError:
                 pass
-        variables[varname]=varval
+        variables[varname] = varval
     return variables
 
 
-def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
+def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
     """
     Function to read data of the multi-species dust+gas hydro code.
 
     Arguments:
-    ----------
 
     directory : string
         path to read from. Should be the simulation folder containing input and
@@ -148,140 +165,145 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
         0 : not a log grid
         1 : log grid
 
+    a : array-like
+        the particle size array if known
+
     Output:
     -------
-
     d : data_dict
         `data_dict` object containing the relevant data fields
 
     if `fname` is given, also a hdf5 file is written out.
+
     """
     #
     # construct the binary filename & file path
     #
-    if n==-1:
-        filenames = glob.glob(os.path.join(os.path.expanduser(directory),'bin_data','bin_out*'))
+    if n == -1:
+        filenames = glob.glob(os.path.join(os.path.expanduser(directory), 'bin_data', 'bin_out*'))
+        n = len(filenames) - 1
         if len(filenames) == 0:
             raise ValueError('no binary file found')
         filename_full = filenames[-1]
-        filename      = os.path.split(filename_full)[-1]
+        filename = os.path.split(filename_full)[-1]
     else:
         filename = 'bin_out{:04d}'.format(n)
-        filename_full = os.path.join(os.path.expanduser(directory),'bin_data',filename)
+        filename_full = os.path.join(os.path.expanduser(directory), 'bin_data', filename)
     #
     # read initial entries that define what is to be read in next
     #
-    with open(filename_full,'rb') as f:
-        nx4     = fread(f, 4*"i")
-        time    = fread(f, 1*"f")
-        bbox    = fread(f, 5*"f")
-        nplanet = int(bbox[4]);
+    with open(filename_full, 'rb') as f:
+        nx4 = fread(f, 4 * "i")
+        time = fread(f, 1 * "f")
+        bbox = fread(f, 5 * "f")
+        nplanet = int(bbox[4])
 
         if (nplanet > 0):
-            planet_info = fread(f,(3*nplanet)*"f");
-            rp          = np.zeros(nplanet)
-            phip        = np.zeros(nplanet)
-            pmass       = np.zeros(nplanet)
-            ii = 0;
+            planet_info = fread(f, (3 * nplanet) * "f")
+            rp = np.zeros(nplanet)
+            phip = np.zeros(nplanet)
+            pmass = np.zeros(nplanet)
+            ii = 0
             for i in range(0, nplanet):
-                rp[i]    = planet_info[ii+0];
-                phip[i]  = planet_info[ii+1];
-                pmass[i] = planet_info[ii+2];
-                ii += 3;
+                rp[i] = planet_info[ii + 0]
+                phip[i] = planet_info[ii + 1]
+                pmass[i] = planet_info[ii + 2]
+                ii += 3
 
-        disk_info = fread(f, 4*"f");
-        cs    = disk_info[0];
-        beta  = disk_info[1];
-        zeta  = disk_info[2];
-        Mdisk = disk_info[3];
+        disk_info = fread(f, 4 * "f")
+        cs = disk_info[0]
+        beta = disk_info[1]
+        zeta = disk_info[2]
+        Mdisk = disk_info[3]
 
-        nvar  = nx4[0]
-        nx    = nx4[1]
-        ny    = nx4[2]
+        nvar = nx4[0]
+        nx = nx4[1]
+        ny = nx4[2]
         nproc = nx4[3]
-        dx    = (bbox[1]-bbox[0])/nx;
-        dy    = (bbox[3]-bbox[2])/ny;
-        na    = (nvar-4)//3
+        dx = (bbox[1] - bbox[0]) / nx
+        dy = (bbox[3] - bbox[2]) / ny
+        na = (nvar - 4) // 3
         #
         # construct the grid
         #
         if igrid == 0:
-            x = bbox[0] + (np.arange(0,nx)*1.0/nx + 0.5/nx)*(bbox[1]-bbox[0]);
+            x = bbox[0] + (np.arange(0, nx) * 1.0 / nx + 0.5 / nx) * (bbox[1] - bbox[0])
             if (log_grid == 1):
-                logdr = (np.log(bbox[1])-np.log(bbox[0]))/nx
-                logx  = np.log(bbox[0]) + (np.arange(0,nx)*1.0 + 0.5)*logdr
-                x     = np.exp(logx)
-            y      = bbox[2] + (np.arange(0,ny+1)*1.0/ny + 0.5/ny)*(bbox[3]-bbox[2]);
+                logdr = (np.log(bbox[1]) - np.log(bbox[0])) / nx
+                logx = np.log(bbox[0]) + (np.arange(0, nx) * 1.0 + 0.5) * logdr
+                x = np.exp(logx)
+            y = bbox[2] + (np.arange(0, ny + 1) * 1.0 / ny + 0.5 / ny) * (bbox[3] - bbox[2])
             xx, yy = np.meshgrid(x, y)
-            xy1    = xx*np.cos(yy)
-            xy2    = xx*np.sin(yy)
-            igrid  = 1
-            data   = np.zeros((nx,ny+1,nvar), dtype=np.float32, order="F")
+            xy1 = xx * np.cos(yy)
+            xy2 = xx * np.sin(yy)
+            igrid = 1
+            data = np.zeros((nx, ny + 1, nvar), dtype=np.float32, order="F")
         #
         # reading in the data
         #
         for i in range(0, nproc):
-            sys.stdout.write('\rreading part {} of {}'.format(i+1,nproc))
+            sys.stdout.write('\rreading part {} of {}'.format(i + 1, nproc))
             sys.stdout.flush()
-            n4   = fread(f, 4*"i")
-            ix   = n4[0]   # starting x-pos
-            iy   = n4[1]   # starting y-pos
-            nx1  = n4[2]   # number cell in x
-            ny1  = n4[3]   # number cell in y
-            dat1 = fread(f, nvar*nx1*ny1*"f")
-            dat1 = np.array(dat1).reshape((nx1,ny1,nvar), order="F")
-            data[ix:ix+nx1,iy:iy+ny1,:] = dat1.copy();
+            n4 = fread(f, 4 * "i")
+            ix = n4[0]   # starting x-pos
+            iy = n4[1]   # starting y-pos
+            nx1 = n4[2]   # number cell in x
+            ny1 = n4[3]   # number cell in y
+            dat1 = fread(f, nvar * nx1 * ny1 * "f")
+            dat1 = np.array(dat1).reshape((nx1, ny1, nvar), order="F")
+            data[ix:ix + nx1, iy:iy + ny1, :] = dat1.copy()
             del dat1
         print('\rFinished reading data.')
     #
     # read in parameters
     #
-    input_file = os.path.join(directory,'planet2D_coag.input')
+    input_file = os.path.join(directory, 'planet2D_coag.input')
     params = read_input(input_file)
     #
     # assign the variables to fields
     #
-    d  = {  'n':       n,
-            'na':      na,
-            'x':       x,
-            'xx':      xx,
-            'dx':      dx,
-            'y':       y,
-            'yy':      yy,
-            'dy':      dy,
-            'time':    time,
-            'cs':      cs,
-            'beta':    beta,
-            'zeta':    zeta,
-            'Mdisk':   Mdisk,
-            'nx':      nx,
-            'ny':      ny,
-            'xy1':     xy1,
-            'xy2':     xy2,
-            'nproc':   nproc,
-            'nvar':    nvar,
-            'sigma_g': data[:,:,0].reshape((nx,ny+1),order='F'),
-            'P_gas':   data[:,:,1].reshape((nx,ny+1),order='F'),
-            'vr_g':    data[:,:,2].reshape((nx,ny+1),order='F'),
-            'vp_g':    data[:,:,3].reshape((nx,ny+1),order='F'),
-            'sigma_d': data[:,:,1+3*np.arange(na)].reshape((nx,ny+1,na),order='F'),
-            'vr_d':    data[:,:,2+3*np.arange(na)].reshape((nx,ny+1,na),order='F'),
-            'vp_d':    data[:,:,3+3*np.arange(na)].reshape((nx,ny+1,na),order='F'),
-            'params':  params
+    d = {'n': n,
+         'na': na,
+         'x': x,
+         'xx': xx,
+         'dx': dx,
+         'y': y,
+         'yy': yy,
+         'dy': dy,
+         'time': time,
+         'cs': cs,
+         'beta': beta,
+         'zeta': zeta,
+         'Mdisk': Mdisk,
+         'nx': nx,
+         'ny': ny,
+         'xy1': xy1,
+         'xy2': xy2,
+         'nproc': nproc,
+         'nvar': nvar,
+         'sigma_g': data[:, :, 0].reshape((nx, ny + 1), order='F'),
+         'P_gas': data[:, :, 1].reshape((nx, ny + 1), order='F'),
+         'vr_g': data[:, :, 2].reshape((nx, ny + 1), order='F'),
+         'vp_g': data[:, :, 3].reshape((nx, ny + 1), order='F'),
+         'sigma_d': data[:, :, 1 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
+         'vr_d': data[:, :, 2 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
+         'vp_d': data[:, :, 3 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
+         'params': params,
+         'json_encoded_params': json.dumps(params)
          }
     #
     # if a file name was given, we store (or add) the data in a hdf5 file
     #
     if fname is not None:
         #
-        #create a hdf5 file
+        # create a hdf5 file
         #
-        with h5py.File(fname,'a') as f:
+        with h5py.File(fname, 'a') as f:
             #
             # check for existing data,
             # pick an unused data name
             #
-            g_name = 'data_%04i'%n
+            g_name = 'data_{:04d}'.format(n)
             #
             # create a group if it doesn't exist
             #
@@ -292,19 +314,58 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0):
             #
             # store grain size and folder as a group attribute
             #
-            if a==None:
+            if a is None:
                 g.attrs['grainsize'] = np.nan
                 warnings.warn('no grain size attribute was set for this data group')
             else:
                 g.attrs['grainsize'] = a
-            g.attrs['folder']    = directory
+            g.attrs['folder'] = directory
             #
             # store the data in our group; overwrite if it exists
             #
-            for k,v in d.items():
-                if k in g: del g[k]
-                g.create_dataset(k,data=v)
+            for k, v in d.items():
+                if type(v) is dict:
+                    continue
+                if k in g:
+                    del g[k]
+                g.create_dataset(k, data=v)
     #
     # end of read_data: return data dictionary
+    #
+    return data_dict(d)
+
+
+def read_hdf5_file(fname, n=-1):
+    """To read LA-COMPASS data from a previously stored hdf5 file."""
+    with h5py.File(fname, 'r') as f:
+        #
+        # get the keys and transform them into integer indices
+        #
+        k = list(f.keys())
+        indices = [int(_k.split('_')[-1]) for _k in k]
+        #
+        # if n is -1, we take the largest index
+        #
+        if n == -1:
+            n = max(indices)
+        #
+        # get the key corresponding to the right integer index
+        #
+        key = list(f.keys())[indices.index(n)]
+        print('Reading index {}'.format(n))
+        #
+        # access the corresponding group and create a dictionary
+        # that contains all those data
+        #
+        g = f[key]
+        d = {}
+        for k, v in g.items():
+            d[k] = v
+        #
+        # transform the encoded parameter dictionary back from json
+        #
+        d['params'] = json.loads(g['json_encoded_params'][()])
+    #
+    # transform to data_dict and return
     #
     return data_dict(d)
