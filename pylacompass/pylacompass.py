@@ -344,10 +344,10 @@ def read_hdf5_file(fname, n=-1):
         k = list(f.keys())
         indices = [int(_k.split('_')[-1]) for _k in k]
         #
-        # if n is -1, we take the largest index
+        # if n is negative we count from the largest index backwards
         #
-        if n == -1:
-            n = max(indices)
+        if n < 0:
+            n = sorted(indices)[n]
         #
         # get the key corresponding to the right integer index
         #
