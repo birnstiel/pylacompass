@@ -179,9 +179,9 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
     #
     # construct the binary filename & file path
     #
-    if n == -1:
+    if n < 0:
         filenames = glob.glob(os.path.join(os.path.expanduser(directory), 'bin_data', 'bin_out*'))
-        n = len(filenames) - 1
+        n = n % len(filenames)
         if len(filenames) == 0:
             raise ValueError('no binary file found')
         filename_full = filenames[-1]
