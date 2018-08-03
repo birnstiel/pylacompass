@@ -5,7 +5,7 @@ import os
 PACKAGENAME = 'pylacompass'
 
 setup(name=PACKAGENAME,
-      use_scm_version=True,
+      version='0.0.0',
       description='python routines to process simulation data of LA-COMPASS code',
       long_description=open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
       url='http://www.til-birnstiel.de',
@@ -19,7 +19,6 @@ setup(name=PACKAGENAME,
           'scipy',
           'numpy',
           'matplotlib',
-          'setuptools_scm'
           ],
       zip_safe=False
       )
