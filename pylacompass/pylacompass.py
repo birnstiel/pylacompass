@@ -258,7 +258,10 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
     # read in parameters
     #
     input_file = os.path.join(directory, 'planet2D_coag.input')
-    params = read_input(input_file)
+    if os.path.isfile(input_file):
+        params = read_input(input_file)
+    else:
+        params = {}
     #
     # assign the variables to fields
     #
