@@ -44,7 +44,8 @@ class data_dict(dict):
         return copy.copy(self.__dict__)
 
 
-def read_input(fname, assignment='=', comment='#', headings='<.*?>', separators=[','], skiprows=0):
+def read_input(fname, assignment='=', comment='#', headings='<.*?>',
+               separators=[';'], array_separator=',', skiprows=0):
     """
     Reads input parameters from a text file.
 
@@ -52,27 +53,30 @@ def read_input(fname, assignment='=', comment='#', headings='<.*?>', separators=
     ----------
 
     fname : string
-    :   path/name of input file
+        path/name of input file
 
     Keywords:
     ---------
 
     assignment : string
-    :   which character is used as assignment. commonly '=' or ':'
+        which character is used as assignment. commonly '=' or ':'
 
     comment : string
-    :   which character starts a comment - rest of line
+        which character starts a comment - rest of line
         after this character is ignored
 
     headings : string
-    :   define a pattern that is ignored as well.
+        define a pattern that is ignored as well.
 
     separators : string
-    :   which characters separate the assignment.
+        which characters separate the assignment.
         Typically ';' or ','. Newlines always count.
 
+    array_separator : string
+        if one variable is an array, separate values by this character
+
     skiprows : int
-    :   how many rows to skip in the beginning
+        how many rows to skip in the beginning
 
     Output:
     -------
@@ -105,43 +109,52 @@ def read_input(fname, assignment='=', comment='#', headings='<.*?>', separators=
     variables = {}
     with open(fname) as f:
         data = f.readlines()
+
     # remove comments
 
     def fct(line):
         return line.strip().split(comment)[0]
     data = [fct(line) for line in data if fct(line) != '']
     data = data[skiprows:]
+
     # remove headings
 
     def fct(line):
         return re.subn(headings, '', line)[0].strip()
     data = [fct(line) for line in data if fct(line) != '']
+
     # split everything
+
     for separator in separators:
         data_split = []
         for line in data:
             data_split += line.split(separator)
         data = data_split
+
     # parse variables
+
     for line in data:
         varname, varval = line.split(assignment)
         varname = varname.strip()
         varval = varval.strip()
-        #
+
         # select format
-        #
+
         try:
             varval = int(varval)
         except ValueError:
             try:
                 varval = float(varval)
             except ValueError:
-                pass
+                try:
+                    varval = np.fromstring(varval, sep=array_separator)
+                except ValueError:
+                    print('could not parse {}'.format(varname))
         variables[varname] = varval
     return variables
 
 
-def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
+def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fname=None, log_grid=0, a=None):
     """
     Function to read data of the multi-species dust+gas hydro code.
 
@@ -150,6 +163,9 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
     directory : string
         path to read from. Should be the simulation folder containing input and
         output files as well as the binary data folder `bin_data/`.
+
+    inputfile : string
+        filename of the parameter file to read from
 
     n : integer
         index of the binary snapshot to read
@@ -183,12 +199,14 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
         filenames = glob.glob(os.path.join(os.path.expanduser(directory), 'bin_data', 'bin_out*'))
         n = n % len(filenames)
         if len(filenames) == 0:
-            raise ValueError('no binary file found')
+            raise ValueError('no binary file found in {}'.format(os.path.join(os.path.expanduser(directory), 'bin_data')))
         filename_full = filenames[-1]
         filename = os.path.split(filename_full)[-1]
     else:
         filename = 'bin_out{:04d}'.format(n)
         filename_full = os.path.join(os.path.expanduser(directory), 'bin_data', filename)
+        if not os.path.isfile(filename_full):
+            raise NameError('no binary found in {}'.format(filename_full.replace(filename, '')))
     #
     # read initial entries that define what is to be read in next
     #
@@ -253,15 +271,28 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
             dat1 = np.array(dat1).reshape((nx1, ny1, nvar), order="F")
             data[ix:ix + nx1, iy:iy + ny1, :] = dat1.copy()
             del dat1
-        print('\rFinished reading data.')
+        print('\rFinished reading data.    ')
     #
     # read in parameters
     #
-    input_file = os.path.join(directory, 'planet2D_coag.input')
+    input_file = os.path.join(directory, inputfile)
     if os.path.isfile(input_file):
         params = read_input(input_file)
     else:
         params = {}
+
+    # since dict cannot be stored in hdf5, we need to encode it as json
+    # since numpy cannot be stored in json, we need to convert the arrays
+    # to lists
+
+    json_encoded_params = {}
+    for k, v in params.items():
+        if type(v) is np.ndarray:
+            json_encoded_params[k] = v.tolist()
+        else:
+            json_encoded_params[k] = v
+    json_encoded_params = json.dumps(json_encoded_params)
+
     #
     # assign the variables to fields
     #
@@ -292,7 +323,7 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
          'vr_d': data[:, :, 2 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'vp_d': data[:, :, 3 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'params': params,
-         'json_encoded_params': json.dumps(params)
+         'json_encoded_params': json_encoded_params
          }
     #
     # if a file name was given, we store (or add) the data in a hdf5 file
@@ -338,9 +369,36 @@ def read_data(directory='.', n=-1, igrid=0, fname=None, log_grid=0, a=None):
     return data_dict(d)
 
 
-def read_hdf5_file(fname, n=-1):
-    """To read LA-COMPASS data from a previously stored hdf5 file."""
-    with h5py.File(fname, 'r') as f:
+def read_hdf5_file(fname, n=-1, lowmem=True):
+    """
+    To read LA-COMPASS data from a previously stored hdf5 file.
+
+    fname : str
+        file name to read in
+
+    Keywords:
+    ---------
+
+    n : int
+        select a snapshot, default is -1 which is the last snapshot
+
+    lowmem : bool
+        True:   keep the file open and use links to the datasets
+        False:  read in all the data into memory and close the file
+
+    Output:
+    -------
+    d, f
+
+    d : data_dict
+        data dictionary containing the data as attributes and fields
+
+    f : h5py file handle
+        the file handle to close the file manually if lowmem==True
+
+    """
+    try:
+        f = h5py.File(fname, 'r')
         #
         # get the keys and transform them into integer indices
         #
@@ -351,24 +409,34 @@ def read_hdf5_file(fname, n=-1):
         #
         if n < 0:
             n = sorted(indices)[n]
-        #
+
         # get the key corresponding to the right integer index
-        #
+
         key = list(f.keys())[indices.index(n)]
         print('Reading index {}'.format(n))
-        #
+
         # access the corresponding group and create a dictionary
         # that contains all those data
-        #
+
         g = f[key]
         d = {}
         for k, v in g.items():
-            d[k] = v
-        #
+            if lowmem:
+                d[k] = v
+            else:
+                d[k] = v[()]
+
         # transform the encoded parameter dictionary back from json
-        #
+
         d['params'] = json.loads(g['json_encoded_params'][()])
-    #
+        for k, v in d.items():
+            if type(v) is list:
+                d[k] = np.array(v)
+
+    finally:
+        if not lowmem:
+            f.close()
+
     # transform to data_dict and return
-    #
-    return data_dict(d)
+
+    return data_dict(d), f
