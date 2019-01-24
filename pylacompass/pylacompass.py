@@ -25,8 +25,7 @@ def fread(f, fmt):
 class data_dict(dict):
     """
     This creates a dict-like class, where all entries can also be accessed
-    as attributes. Inherits from dict class, similar to the following:
-
+    as attributes. Inherits from dict class.
     """
 
     __doc__ += dict.__doc__
@@ -154,7 +153,7 @@ def read_input(fname, assignment='=', comment='#', headings='<.*?>',
     return variables
 
 
-def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fname=None, log_grid=0, a=None):
+def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fname=None, log_grid=0, a=None, gridfile=None):
     """
     Function to read data of the multi-species dust+gas hydro code.
 
@@ -183,6 +182,9 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
 
     a : array-like
         the particle size array if known
+
+    gridfile : str
+        if given: read radial grid from this file
 
     Output:
     -------
@@ -244,18 +246,27 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
         #
         # construct the grid
         #
-        if igrid == 0:
-            x = bbox[0] + (np.arange(0, nx) * 1.0 / nx + 0.5 / nx) * (bbox[1] - bbox[0])
+        if gridfile is None:
+            if igrid == 0:
+                x = bbox[0] + (np.arange(0, nx) * 1.0 / nx + 0.5 / nx) * (bbox[1] - bbox[0])
+                if (log_grid == 1):
+                    logdr = (np.log(bbox[1]) - np.log(bbox[0])) / nx
+                    logx = np.log(bbox[0]) + (np.arange(0, nx) * 1.0 + 0.5) * logdr
+                    x = np.exp(logx)
+                y = bbox[2] + (np.arange(0, ny + 1) * 1.0 / ny + 0.5 / ny) * (bbox[3] - bbox[2])
+                xx, yy = np.meshgrid(x, y)
+                xy1 = xx * np.cos(yy)
+                xy2 = xx * np.sin(yy)
+                igrid = 1
+                data = np.zeros((nx, ny + 1, nvar), dtype=np.float32, order="F")
+        else:
             if (log_grid == 1):
-                logdr = (np.log(bbox[1]) - np.log(bbox[0])) / nx
-                logx = np.log(bbox[0]) + (np.arange(0, nx) * 1.0 + 0.5) * logdr
-                x = np.exp(logx)
-            y = bbox[2] + (np.arange(0, ny + 1) * 1.0 / ny + 0.5 / ny) * (bbox[3] - bbox[2])
-            xx, yy = np.meshgrid(x, y)
-            xy1 = xx * np.cos(yy)
-            xy2 = xx * np.sin(yy)
-            igrid = 1
-            data = np.zeros((nx, ny + 1, nvar), dtype=np.float32, order="F")
+                x = np.zeros(nx)
+                ff = open(gridfile, 'r')
+                for ir in range(nx):
+                    x[ir] = ff.readline()
+                ff.close()
+
         #
         # reading in the data
         #
@@ -293,6 +304,9 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
             json_encoded_params[k] = v
     json_encoded_params = json.dumps(json_encoded_params)
 
+    if a is None:
+        a = np.logspace(np.log10(params['size_of_dust']), np.log10(params['size_of_dust_mx']), na)
+
     #
     # assign the variables to fields
     #
@@ -323,7 +337,8 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
          'vr_d': data[:, :, 2 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'vp_d': data[:, :, 3 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'params': params,
-         'json_encoded_params': json_encoded_params
+         'json_encoded_params': json_encoded_params,
+         'a': a
          }
     #
     # if a file name was given, we store (or add) the data in a hdf5 file
