@@ -5,7 +5,8 @@ from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 
-def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll', bbox=(2.1, 0.5)):
+def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
+              bbox=(2.1, 0.5), alpha=1.0, ec='k'):
     """
     Plot the given quantity in a x-y plot. Add a zoom-in to a certain region.
 
@@ -36,6 +37,12 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll', bbox=(2.1, 
 
     bbox : 2 element tuple
         bounding box position where to place the box in case of pos=='r'
+
+    ec : color
+        color of the lines connecting the inset
+
+    alpha : float
+        alpha value of the lines connecting the inset
 
     Output:
     -------
@@ -88,6 +95,6 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll', bbox=(2.1, 
         axins.axes.get_xaxis().set_visible(False)
         axins.axes.get_yaxis().set_visible(False)
 
-        mark_inset(ax, axins, loc1=loc1, loc2=loc2, fc='none', ec='0.5', alpha=0.7)
+        mark_inset(ax, axins, loc1=loc1, loc2=loc2, fc='none', ec=ec, alpha=alpha)
 
     return f
