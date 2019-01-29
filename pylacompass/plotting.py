@@ -6,7 +6,8 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 
 def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
-              bbox=(2.1, 0.5), alpha=1.0, ec='k'):
+              bbox=(2.1, 0.5), alpha=1.0, ec='k', fct='pcolormesh',
+              **kwargs):
     """
     Plot the given quantity in a x-y plot. Add a zoom-in to a certain region.
 
@@ -44,6 +45,12 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
     alpha : float
         alpha value of the lines connecting the inset
 
+    fct : bound method
+        with bound method of the axis to use for plotting, default pcolormesh
+
+    **kwargs : keywords
+        other keywords to be passed to the plotting function fct
+
     Output:
     -------
 
@@ -55,7 +62,7 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
 
     f, ax = plt.subplots(figsize=(6, 5))
 
-    cc = ax.pcolormesh(d.xy1, d.xy2, np.log10(quantity.T + 1e-45), rasterized=True)
+    cc = getattr(ax, fct)(d.xy1, d.xy2, np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
     plt.colorbar(cc)
     ax.set_aspect(1)
 
@@ -87,7 +94,7 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
         else:
             axins = zoomed_inset_axes(ax, zoom, loc=loc)
 
-        axins.pcolormesh(d.xy1, d.xy2, np.log10(quantity.T + 1e-45), rasterized=True)
+        getattr(axins, fct)(d.xy1, d.xy2, np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
         axins.set_aspect(1)
         axins.set_xlim(x0, x1)
         axins.set_ylim(y0, y1)

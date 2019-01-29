@@ -7,6 +7,7 @@ import sys
 import re
 import json
 import numpy as np
+import astropy.constants as c
 from struct import calcsize, unpack
 
 
@@ -455,3 +456,70 @@ def read_hdf5_file(fname, n=-1, lowmem=True):
     # transform to data_dict and return
 
     return data_dict(d), f
+
+
+def read_torqfile(d, torqfile):
+    """
+    read the data from a LA-COMPASS torq1d.dat file.
+
+    Arguments
+    ---------
+
+    d : data_dict
+        read in data from LA-COMPASS. Needed to access parameters and grid dimensions
+
+    torqfile : str
+        file path of the torq1d file
+
+    Output
+    ------
+    data_dict : contains the converted quantities and the original (unconverted) data
+    """
+
+    # read file contents as lines
+
+    with open(torqfile) as fid:
+        lines = fid.readlines()
+
+    # get the lines starting with a pound sign. there is one per snapshot
+    # element 4 is the time in code units
+
+    time_lines = [line for line in lines if line.startswith('#')]
+    nt = len(time_lines)
+    time = np.array([float(line.split()[4]) for line in time_lines])
+
+    # get all the other lines which are data lines
+
+    data = [line for line in lines if not (line.startswith('#') or line == '\n')]
+
+    # join them to a string, then convert them to a 1D array of floats, then reshape
+
+    data = np.fromstring(''.join(data), sep=' ').reshape(nt, d.nx, -1)
+
+    # the entires we know, we will transform into separate arrays, but the full dataset remains in the array 'data'
+
+    r      = data[0, :, 0]
+    sigmag = data[:, :, 2]
+    alpha  = data[:, :, 7]
+    sigmad = data[:, :, 8:8 + d.na]
+
+    # convert to cgs units
+
+    r    *= d.params['r0_length'] * c.au.cgs.value
+    time *= d.params['r0_length']**1.5 / (2 * np.pi)
+    factor_sig = (c.M_sun / (d.params['r0_length'] * c.au)**2).cgs.value
+
+    sigmag *= factor_sig
+    sigmad *= factor_sig
+    alpha /= 1.5
+
+    # return it as a data_dict
+
+    return data_dict({
+        'r': r,
+        'orbits': time,
+        'sigma_g': sigmag,
+        'sigma_d': sigmad,
+        'alpha': alpha,
+        'data': data,
+        })
