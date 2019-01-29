@@ -10,3 +10,10 @@
 
 # ignore the version file
 /pylacompass/_version.py
+
+# ignore data and pdfs
+/notebooks/*.pdf
+/notebooks/*.hdf5
+
+# ignore ipython stuff
+.ipynb_checkpoints/
