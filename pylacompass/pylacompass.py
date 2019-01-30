@@ -44,6 +44,95 @@ class data_dict(dict):
         return copy.copy(self.__dict__)
 
 
+def convert_to_cgs(dd):
+    """
+    Takes a dictionary in code units and returns a new dictionary
+    in CGS units.
+
+    It uses the same contents, some conversions are however not clear
+    and will need to be tested, such as
+
+    - zeta
+    - beta
+    - Mdisk
+    - P_gas
+    - xy1, xy2
+
+    A couple of extra values are added for convenience, such as:
+
+    - code-to-cgs unit conversion: m_unit, r_unit, t_unit
+    - v_k: keplerian velocity
+    - m_star, m_planet, m_disk
+
+    Arguments
+    ---------
+
+    dd : data_dict
+        data_dict in code units
+
+    Output
+    ------
+
+    data_dict : another data_dict in CGS units
+
+    Note
+    ----
+
+    This was not yet tested with a data_dict in lowmem mode. It might break, and
+    could be fixed with adding [()] after each call to a dataset instead of a
+    numpy array.
+    """
+    m_unit   = c.M_sun.cgs.value
+    m_star   = dd.params['m_star'] * m_unit
+    m_disk   = dd.params['M_DISK'] * m_unit
+    m_planet = dd.params['mPlanet'] * m_unit
+
+    r_unit = c.au.cgs.value * dd.params['r0_length']
+    t_unit = 1 / np.sqrt(c.G.cgs.value * m_star / r_unit**3)
+
+    v_k    = np.sqrt(c.G.cgs.value * m_star / (dd.x * r_unit))
+
+    d = {'n': dd.n,
+         'na': dd.na,
+         'x': dd.x * r_unit,
+         'xx': dd.xx * r_unit,
+         'dx': dd.dx * r_unit,
+         'y': dd.y,
+         'yy': dd.yy,
+         'dy': dd.dy,
+         'time': dd.time * t_unit,
+         'cs': dd.cs * r_unit / t_unit,
+         'zeta': dd.zeta,  # unknown, no conversion
+         'beta': dd.beta,  # unknown, no conversion
+         'Mdisk': dd.Mdisk * m_unit,  # not sure if converted correctly
+         'nx': dd.nx,
+         'ny': dd.ny,
+         'xy1': dd.xy1,
+         'xy2': dd.xy2,
+         'nproc': dd.nproc,
+         'nvar': dd.nvar,
+         'sigma_g': dd.sigma_g * m_disk / r_unit**2,
+         'P_gas': dd.P_gas * m_unit / (r_unit * t_unit),
+         'vr_g': dd.vr_g * r_unit / t_unit,
+         'vp_g': dd.vp_g  * r_unit / t_unit,
+         'sigma_d': dd.sigma_d * m_disk / r_unit**2,
+         'vr_d': dd.vr_d * r_unit / t_unit,
+         'vp_d': dd.vp_d * r_unit / t_unit,
+         'params': dd.params,
+         'json_encoded_params': dd.json_encoded_params,
+         'a': dd.a,
+         'm_unit': m_unit,
+         'r_unit': r_unit,
+         't_unit': t_unit,
+         'm_star': m_star,
+         'm_planet': m_planet,
+         'm_disk': m_disk,
+         'v_k': v_k
+         }
+
+    return data_dict(d)
+
+
 def read_input(fname, assignment='=', comment='#', headings='<.*?>',
                separators=[';'], array_separator=',', skiprows=0):
     """
