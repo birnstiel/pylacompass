@@ -7,7 +7,7 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
               bbox=(2.1, 0.5), alpha=1.0, ec='k', fct='pcolormesh',
-              r_unit=1,
+              r_unit=1, cb_orientation='vertical',
               **kwargs):
     """
     Plot the given quantity in a x-y plot. Add a zoom-in to a certain region.
@@ -53,6 +53,9 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
     r_unit : float
         dividing radius by this quantity, default 1, to be used for cgs->AU
 
+    cb_orientation : str
+        orientation parameter passed to the colorbar: vertical or horizontal
+
     **kwargs : keywords
         other keywords to be passed to the plotting function fct
 
@@ -70,7 +73,7 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
     cc = getattr(ax, fct)(
         d.xy1 / r_unit, d.xy2 / r_unit,
         np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
-    plt.colorbar(cc)
+    plt.colorbar(cc,orientation=cb_orientation)
     ax.set_aspect(1)
 
     if zoom is not None:
