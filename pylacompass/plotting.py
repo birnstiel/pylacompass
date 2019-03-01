@@ -119,6 +119,12 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
 
         mark_inset(ax, axins, loc1=loc1, loc2=loc2, fc='none', ec=ec, alpha=alpha)
 
-        plt.colorbar(cc, orientation=cb_orientation)
+        cb = plt.colorbar(cc, orientation=cb_orientation)
+        # cb.set_aspect('auto')
+        pos = ax.get_position()
+        if cb_orientation == 'horizontal':
+            cb.set_position([pos.x0, pos.y1, pos.width, 0.05 * pos.height])
+        else:
+            cb.set_position([pos.x1, pos.y0, 0.05 * pos.width, pos.height])
 
     return f
