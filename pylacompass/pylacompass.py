@@ -278,7 +278,7 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
     # construct the binary filename & file path
     #
     if n < 0:
-        filenames = glob.glob(os.path.join(os.path.expanduser(directory), 'bin_data', 'bin_out*'))
+        filenames = sorted(glob.glob(os.path.join(os.path.expanduser(directory), 'bin_data', 'bin_out*')))
         n = n % len(filenames)
         if len(filenames) == 0:
             raise ValueError('no binary file found in {}'.format(os.path.join(os.path.expanduser(directory), 'bin_data')))
