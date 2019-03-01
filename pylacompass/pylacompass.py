@@ -247,7 +247,11 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
         filename of the parameter file to read from
 
     n : integer
-        index of the binary snapshot to read
+        index of the binary snapshot to read. positive values need
+        to directly specify the snapshot number like n=5->bin_data0005
+        negative values:
+        -1 means last available
+        -2 means second to last available and so on.
 
     igrid : integer
         grid parameter; only igrid=0 is currently implemented
@@ -284,6 +288,7 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
             raise ValueError('no binary file found in {}'.format(os.path.join(os.path.expanduser(directory), 'bin_data')))
         filename_full = filenames[-1]
         filename = os.path.split(filename_full)[-1]
+        n = int(filename.split('bin_data')[-1])
     else:
         filename = 'bin_out{:04d}'.format(n)
         filename_full = os.path.join(os.path.expanduser(directory), 'bin_data', filename)
