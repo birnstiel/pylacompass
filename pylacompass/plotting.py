@@ -123,8 +123,9 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
         # cb.set_aspect('auto')
         pos = ax.get_position()
         if cb_orientation == 'horizontal':
-            cb.set_position([pos.x0, pos.y1, pos.width, 0.05 * pos.height])
+            cb.ax.set_position([pos.x0, pos.y1, pos.width, 0.05 * pos.height])
+            cb.ax.xaxis.tick_top()
         else:
-            cb.set_position([pos.x1, pos.y0, 0.05 * pos.width, pos.height])
+            cb.ax.set_position([pos.x1, pos.y0, 0.05 * pos.width, pos.height])
 
     return f
