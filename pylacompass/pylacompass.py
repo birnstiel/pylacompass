@@ -91,25 +91,14 @@ def convert_to_cgs(dd):
 
     v_k    = np.sqrt(c.G.cgs.value * m_star / (dd.x * r_unit))
 
-    d = {'n': dd.n,
-         'na': dd.na,
-         'x': dd.x * r_unit,
+    d = {'x': dd.x * r_unit,
          'xx': dd.xx * r_unit,
          'dx': dd.dx * r_unit,
-         'y': dd.y,
-         'yy': dd.yy,
-         'dy': dd.dy,
          'time': dd.time * t_unit,
          'cs': dd.cs * r_unit / t_unit,
-         'zeta': dd.zeta,  # unknown, no conversion
-         'beta': dd.beta,  # unknown, no conversion
          'Mdisk': dd.Mdisk * m_unit,  # not sure if converted correctly
-         'nx': dd.nx,
-         'ny': dd.ny,
          'xy1': dd.xy1 * r_unit,
          'xy2': dd.xy2 * r_unit,
-         'nproc': dd.nproc,
-         'nvar': dd.nvar,
          'sigma_g': dd.sigma_g * m_disk / r_unit**2,
          'P_gas': dd.P_gas * m_unit / (r_unit * t_unit),
          'vr_g': dd.vr_g * r_unit / t_unit,
@@ -117,9 +106,6 @@ def convert_to_cgs(dd):
          'sigma_d': dd.sigma_d * m_disk / r_unit**2,
          'vr_d': dd.vr_d * r_unit / t_unit,
          'vp_d': dd.vp_d * r_unit / t_unit,
-         'params': dd.params,
-         'json_encoded_params': dd.json_encoded_params,
-         'a': dd.a,
          'm_unit': m_unit,
          'r_unit': r_unit,
          't_unit': t_unit,
@@ -128,6 +114,11 @@ def convert_to_cgs(dd):
          'm_disk': m_disk,
          'v_k': v_k
          }
+
+    # to work more general, copy all values over that we haven't assigned yet
+    for k, v in dd.values():
+        if k not in d:
+            d[k] = v
 
     return data_dict(d)
 
