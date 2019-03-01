@@ -56,7 +56,6 @@ def convert_to_cgs(dd):
     - beta
     - Mdisk
     - P_gas
-    - xy1, xy2
 
     A couple of extra values are added for convenience, such as:
 
@@ -107,8 +106,8 @@ def convert_to_cgs(dd):
          'Mdisk': dd.Mdisk * m_unit,  # not sure if converted correctly
          'nx': dd.nx,
          'ny': dd.ny,
-         'xy1': dd.xy1,
-         'xy2': dd.xy2,
+         'xy1': dd.xy1 * r_unit,
+         'xy2': dd.xy2 * r_unit,
          'nproc': dd.nproc,
          'nvar': dd.nvar,
          'sigma_g': dd.sigma_g * m_disk / r_unit**2,

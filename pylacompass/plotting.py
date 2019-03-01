@@ -7,6 +7,7 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
               bbox=(2.1, 0.5), alpha=1.0, ec='k', fct='pcolormesh',
+              r_unit=1,
               **kwargs):
     """
     Plot the given quantity in a x-y plot. Add a zoom-in to a certain region.
@@ -24,6 +25,7 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
 
     region : list
         list of [x0, x1, y0, y1] into which to zoom
+        values assumed to be already scaled with r_unit
 
     zoom : float
         zoom level, none adds no zoom-in
@@ -48,6 +50,9 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
     fct : bound method
         with bound method of the axis to use for plotting, default pcolormesh
 
+    r_unit : float
+        dividing radius by this quantity, default 1, to be used for cgs->AU
+
     **kwargs : keywords
         other keywords to be passed to the plotting function fct
 
@@ -62,7 +67,9 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
 
     f, ax = plt.subplots(figsize=(6, 5))
 
-    cc = getattr(ax, fct)(d.xy1, d.xy2, np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
+    cc = getattr(ax, fct)(
+        d.xy1 / r_unit, d.xy2 / r_unit,
+        np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
     plt.colorbar(cc)
     ax.set_aspect(1)
 
@@ -94,7 +101,9 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
         else:
             axins = zoomed_inset_axes(ax, zoom, loc=loc)
 
-        getattr(axins, fct)(d.xy1, d.xy2, np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
+        getattr(axins, fct)(
+            d.xy1 / r_unit, d.xy2 / r_unit,
+            np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
         axins.set_aspect(1)
         axins.set_xlim(x0, x1)
         axins.set_ylim(y0, y1)
