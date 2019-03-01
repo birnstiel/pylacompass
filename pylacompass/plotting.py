@@ -78,8 +78,6 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
     cc = getattr(ax, fct)(
         d.xy1 / r_unit, d.xy2 / r_unit,
         np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
-    plt.colorbar(cc, orientation=cb_orientation)
-    ax.set_aspect(1)
 
     if zoom is not None:
 
@@ -120,5 +118,7 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
         axins.axes.get_yaxis().set_visible(False)
 
         mark_inset(ax, axins, loc1=loc1, loc2=loc2, fc='none', ec=ec, alpha=alpha)
+
+        plt.colorbar(cc, orientation=cb_orientation)
 
     return f
