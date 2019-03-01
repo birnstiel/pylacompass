@@ -68,12 +68,17 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
 
     x0, x1, y0, y1 = region
 
-    f, ax = plt.subplots(figsize=(6, 5))
+    if pos == 'r':
+        f, ax = plt.subplots(figsize=(10, 5))
+    else:
+        f, ax = plt.subplots(figsize=(6, 5))
+
+    ax.set_aspect(1)
 
     cc = getattr(ax, fct)(
         d.xy1 / r_unit, d.xy2 / r_unit,
         np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
-    plt.colorbar(cc,orientation=cb_orientation)
+    plt.colorbar(cc, orientation=cb_orientation)
     ax.set_aspect(1)
 
     if zoom is not None:
