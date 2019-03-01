@@ -23,6 +23,19 @@ def fread(f, fmt):
     return u
 
 
+def get_snapshot_numbers(fname):
+    """
+    Returns a list of the available snapshots in the hdf5 file fname.
+    """
+    indices = []
+    if not os.path.isfile(fname):
+        print(f'{fname} is not a file!')
+    else:
+        with h5py.File(fname) as f:
+            indices = [int(s.split('_')[-1]) for s in list(f)]
+    return indices
+
+
 class data_dict(dict):
     """
     This creates a dict-like class, where all entries can also be accessed
