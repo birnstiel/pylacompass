@@ -288,7 +288,7 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
             raise ValueError('no binary file found in {}'.format(os.path.join(os.path.expanduser(directory), 'bin_data')))
         filename_full = filenames[-1]
         filename = os.path.split(filename_full)[-1]
-        n = int(filename.split('bin_data')[-1])
+        n = int(filename.split('bin_out')[-1])
     else:
         filename = 'bin_out{:04d}'.format(n)
         filename_full = os.path.join(os.path.expanduser(directory), 'bin_data', filename)
