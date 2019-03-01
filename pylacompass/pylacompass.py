@@ -116,7 +116,7 @@ def convert_to_cgs(dd):
          }
 
     # to work more general, copy all values over that we haven't assigned yet
-    for k, v in dd.values():
+    for k, v in dd.items():
         if k not in d:
             d[k] = v
 
