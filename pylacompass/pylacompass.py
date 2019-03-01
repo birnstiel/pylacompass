@@ -447,8 +447,10 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
             #
             if g_name in f:
                 g = f[g_name]
+                print(f'overwriting {g_name} in {fname}')
             else:
                 g = f.create_group(g_name)
+                print(f'adding {g_name} to {fname}')
             #
             # store grain size and folder as a group attribute
             #
@@ -529,6 +531,10 @@ def read_hdf5_file(fname, n=-1, lowmem=True):
                 d[k] = v
             else:
                 d[k] = v[()]
+
+        # store the snapshot
+
+        d['n_snapshot'] = n
 
         # transform the encoded parameter dictionary back from json
 
