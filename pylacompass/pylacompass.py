@@ -298,9 +298,11 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
         filename_full = os.path.join(os.path.expanduser(directory), 'bin_data', filename)
         if not os.path.isfile(filename_full):
             raise NameError('no binary found in {}'.format(filename_full.replace(filename, '')))
-    #
+
+    n_snapshot = int(filename.split('bin_out')[1])
+
     # read initial entries that define what is to be read in next
-    #
+
     with open(filename_full, 'rb') as f:
         nx4 = fread(f, 4 * "i")
         time = fread(f, 1 * "f")
@@ -417,6 +419,7 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
          'xy1': xy1,
          'xy2': xy2,
          'nproc': nproc,
+         'n_snapshot': n_snapshot,
          'nvar': nvar,
          'sigma_g': data[:, :, 0].reshape((nx, ny + 1), order='F'),
          'P_gas': data[:, :, 1].reshape((nx, ny + 1), order='F'),
