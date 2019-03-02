@@ -79,44 +79,45 @@ def twod_plot(d, quantity, region=[0, 0, 0, 0], zoom=None, pos='ll',
         d.xy1 / r_unit, d.xy2 / r_unit,
         np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
 
-    if zoom is not None:
+    if pos == 'll':
+        loc1 = 2
+        loc2 = 4
+        loc  = 3
+    elif pos == 'ur':
+        loc1 = 2
+        loc2 = 4
+        loc = 1
+    elif pos == 'ul':
+        loc1 = 1
+        loc2 = 3
+        loc = 2
+    elif pos == 'lr':
+        loc1 = 1
+        loc2 = 3
+        loc = 4
+    elif pos == 'r':
+        loc1 = 2
+        loc2 = 3
+        loc = 5
 
-        if pos == 'll':
-            loc1 = 2
-            loc2 = 4
-            loc  = 3
-        elif pos == 'ur':
-            loc1 = 2
-            loc2 = 4
-            loc = 1
-        elif pos == 'ul':
-            loc1 = 1
-            loc2 = 3
-            loc = 2
-        elif pos == 'lr':
-            loc1 = 1
-            loc2 = 3
-            loc = 4
-        elif pos == 'r':
-            loc1 = 2
-            loc2 = 3
-            loc = 5
+    if pos == 'r':
+        axins = zoomed_inset_axes(ax, zoom or 1, loc=5, bbox_to_anchor=bbox, bbox_transform=ax.transAxes)
+    else:
+        axins = zoomed_inset_axes(ax, zoom or 1, loc=loc)
 
-        if pos == 'r':
-            axins = zoomed_inset_axes(ax, zoom, loc=5, bbox_to_anchor=bbox, bbox_transform=ax.transAxes)
-        else:
-            axins = zoomed_inset_axes(ax, zoom, loc=loc)
+    getattr(axins, fct)(
+        d.xy1 / r_unit, d.xy2 / r_unit,
+        np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
+    axins.set_aspect(1)
+    axins.set_xlim(x0, x1)
+    axins.set_ylim(y0, y1)
 
-        getattr(axins, fct)(
-            d.xy1 / r_unit, d.xy2 / r_unit,
-            np.log10(quantity.T + 1e-45), rasterized=True, **kwargs)
-        axins.set_aspect(1)
-        axins.set_xlim(x0, x1)
-        axins.set_ylim(y0, y1)
+    axins.axes.get_xaxis().set_visible(False)
+    axins.axes.get_yaxis().set_visible(False)
 
-        axins.axes.get_xaxis().set_visible(False)
-        axins.axes.get_yaxis().set_visible(False)
-
+    if zoom is None:
+        axins.set_visible(False)
+    else:
         mark_inset(ax, axins, loc1=loc1, loc2=loc2, fc='none', ec=ec, alpha=alpha)
 
     cb = plt.colorbar(cc, orientation=cb_orientation)
