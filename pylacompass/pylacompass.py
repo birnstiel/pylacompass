@@ -356,15 +356,20 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
                 xy1 = xx * np.cos(yy)
                 xy2 = xx * np.sin(yy)
                 igrid = 1
-                data = np.zeros((nx, ny + 1, nvar), dtype=np.float32, order="F")
         else:
-            if (log_grid == 1):
-                x = np.zeros(nx)
-                ff = open(gridfile, 'r')
-                for ir in range(nx):
-                    x[ir] = ff.readline()
-                ff.close()
+            #if (log_grid >= 1):
+            x = np.zeros(nx)
+            ff = open(gridfile, 'r')
+            for ir in range(nx):
+                x[ir] = ff.readline()
+            ff.close()
 
+            y = bbox[2] + (np.arange(0, ny + 1) * 1.0 / ny + 0.5 / ny) * (bbox[3] - bbox[2])
+            xx, yy = np.meshgrid(x, y)
+            xy1 = xx * np.cos(yy)
+            xy2 = xx * np.sin(yy)
+
+        data = np.zeros((nx, ny + 1, nvar), dtype=np.float32, order="F")
         #
         # reading in the data
         #
