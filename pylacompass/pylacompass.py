@@ -31,7 +31,7 @@ def get_snapshot_numbers(fname):
     if not os.path.isfile(fname):
         print(f'{fname} is not a file!')
     else:
-        with h5py.File(fname) as f:
+        with h5py.File(fname, 'r') as f:
             indices = [int(s.split('_')[-1]) for s in list(f)]
     return indices
 
@@ -94,15 +94,15 @@ def convert_to_cgs(dd):
     could be fixed with adding [()] after each call to a dataset instead of a
     numpy array.
     """
-    m_unit   = c.M_sun.cgs.value
-    m_star   = dd.params['m_star'] * m_unit
-    m_disk   = dd.params['M_DISK'] * m_unit
+    m_unit = c.M_sun.cgs.value
+    m_star = dd.params['m_star'] * m_unit
+    m_disk = dd.params['M_DISK'] * m_unit
     m_planet = dd.params['mPlanet'] * m_unit
 
     r_unit = c.au.cgs.value * dd.params['r0_length']
     t_unit = 1 / np.sqrt(c.G.cgs.value * m_star / r_unit**3)
 
-    v_k    = np.sqrt(c.G.cgs.value * m_star / (dd.x * r_unit))
+    v_k = np.sqrt(c.G.cgs.value * m_star / (dd.x * r_unit))
 
     d = {'x': dd.x * r_unit,
          'xx': dd.xx * r_unit,
@@ -115,7 +115,7 @@ def convert_to_cgs(dd):
          'sigma_g': dd.sigma_g * m_disk / r_unit**2,
          'P_gas': dd.P_gas * m_unit / (r_unit * t_unit),
          'vr_g': dd.vr_g * r_unit / t_unit,
-         'vp_g': dd.vp_g  * r_unit / t_unit,
+         'vp_g': dd.vp_g * r_unit / t_unit,
          'sigma_d': dd.sigma_d * m_disk / r_unit**2,
          'vr_d': dd.vr_d * r_unit / t_unit,
          'vp_d': dd.vp_d * r_unit / t_unit,
@@ -357,7 +357,7 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
                 xy2 = xx * np.sin(yy)
                 igrid = 1
         else:
-            #if (log_grid >= 1):
+            # if (log_grid >= 1):
             x = np.zeros(nx)
             ff = open(gridfile, 'r')
             for ir in range(nx):
@@ -606,14 +606,14 @@ def read_torqfile(d, torqfile):
 
     # the entires we know, we will transform into separate arrays, but the full dataset remains in the array 'data'
 
-    r      = data[0, :, 0]
+    r = data[0, :, 0]
     sigmag = data[:, :, 2]
-    alpha  = data[:, :, 7]
+    alpha = data[:, :, 7]
     sigmad = data[:, :, 8:8 + d.na]
 
     # convert to cgs units
 
-    r    *= d.params['r0_length'] * c.au.cgs.value
+    r *= d.params['r0_length'] * c.au.cgs.value
     time *= d.params['r0_length']**1.5 / (2 * np.pi)
     factor_sig = (c.M_sun / (d.params['r0_length'] * c.au)**2).cgs.value
 
@@ -630,4 +630,4 @@ def read_torqfile(d, torqfile):
         'sigma_d': sigmad,
         'alpha': alpha,
         'data': data,
-        })
+    })
