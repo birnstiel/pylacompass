@@ -96,7 +96,7 @@ def convert_to_cgs(dd):
     """
     m_unit = c.M_sun.cgs.value
     m_star = dd.params['m_star'] * m_unit
-    m_disk = dd.params['M_DISK'] * m_unit 
+    m_disk = dd.params['M_DISK'] * m_unit
     m_planet = dd.params['mPlanet'] * m_unit
 
     r_unit = c.au.cgs.value * dd.params['r0_length']
@@ -125,7 +125,10 @@ def convert_to_cgs(dd):
          'm_star': m_star,
          'm_planet': m_planet,
          'm_disk': m_disk,
-         'v_k': v_k
+         'v_k': v_k,
+         'rp': dd.rp * r_unit,
+         'phip': dd.phip,
+         'pmass': dd.pmass * m_unit,
          }
 
     # to work more general, copy all values over that we haven't assigned yet
@@ -386,7 +389,7 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
             data[ix:ix + nx1, iy:iy + ny1, :] = dat1.copy()
             del dat1
         print('\rFinished reading data.    ')
-        data[:,ny,:] = data[:,0,:]
+        data[:, ny, :] = data[:, 0, :]
     #
     # read in parameters
     #
@@ -437,13 +440,16 @@ def read_data(directory='.', inputfile='planet2D_coag.input', n=-1, igrid=0, fna
          'P_gas': data[:, :, 1].reshape((nx, ny + 1), order='F'),
          'vr_g': data[:, :, 2].reshape((nx, ny + 1), order='F'),
          'vp_g': data[:, :, 3].reshape((nx, ny + 1), order='F'),
-         #'sigma_d': data[:, :, 1 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
+         # 'sigma_d': data[:, :, 1 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'sigma_d': data[:, :, 4 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'vr_d': data[:, :, 2 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'vp_d': data[:, :, 3 + 3 * np.arange(na)].reshape((nx, ny + 1, na), order='F'),
          'params': params,
          'json_encoded_params': json_encoded_params,
-         'a': a
+         'a': a,
+         'rp': rp,
+         'phip': phip,
+         'pmass': pmass,
          }
     #
     # if a file name was given, we store (or add) the data in a hdf5 file
