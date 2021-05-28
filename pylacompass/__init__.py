@@ -5,6 +5,7 @@ from .pylacompass import read_data, \
     read_hdf5_file, \
     read_torqfile,\
     convert_to_cgs, \
+    read_3ddata, \
     get_snapshot_numbers
 from .plotting import twod_plot
 __all__ = [
